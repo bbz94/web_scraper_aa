@@ -1,4 +1,4 @@
-$rootPath = "$env:temp\autoplius_crawler"
+$rootPath = "$env:temp\ss"
 
 # create temp directory
 if(!(test-path -Path  $rootPath)){
@@ -8,9 +8,9 @@ if(!(test-path -Path  $rootPath)){
 
 # variables
 $dbPath = "$rootPath\db.txt"
-$domain = "autoplius.lt"
-$htmlPath = "$rootPath\autoplius_caravan_$((get-date).tostring('dd_MM_yyyy')).html"
-$htmlPathMoto = "$rootPath\autoplius_moto_$((get-date).tostring('dd_MM_yyyy')).html"
+$domain = "ss.lv"
+$htmlPath = "$rootPath\ss_caravan_$((get-date).tostring('dd_MM_yyyy')).html"
+$htmlPathMoto = "$rootPath\ss_moto_$((get-date).tostring('dd_MM_yyyy')).html"
 $defaultHtmlPath = "$rootPath\default.html"
 
 # get automation account variables
