@@ -224,11 +224,11 @@ if($newAdds){
     # sort table 
     $htmlAdds = ($newAdds | sort price).html
     # create new file in temp directory
-    $html = ((get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds) -replace 'src=""data-','' | out-file $htmlMotoPath
+    $html = ((get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds) -replace 'src=""data-','' | out-file $htmlPathMoto
 
     # send telgram message
     Send-TelegramMessage -telegramtoken $telegramtoken -telegramchatid $telegramchatid -message 'Sending autoplius moto file:'
-    Send-TelegramFile -telegramtoken $telegramtoken -telegramchatid $telegramchatid -filePath $htmlMotoPath
+    Send-TelegramFile -telegramtoken $telegramtoken -telegramchatid $telegramchatid -filePath $htmlPathMoto
 }else{
     write-host "Nothing to send"
 }
