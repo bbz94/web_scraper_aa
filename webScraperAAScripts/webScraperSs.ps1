@@ -1,94 +1,163 @@
-#Variables
-$telegramtoken = Get-AutomationVariable -Name 'telegramtoken'
-$telegramchatid = Get-AutomationVariable -Name 'telegramchatid'
-$resourceGroup = Get-AutomationVariable -Name 'resourceGroup'
-$vmName = Get-AutomationVariable -Name 'vmName'
-
-
-Write-Output "appId = $appId / tenantId = $tenantId"
-
-#Connect Az account
-# Ensures you do not inherit an AzContext in your runbook
-Disable-AzContextAutosave -Scope Process
-
-# Connect to Azure with system-assigned managed identity
-$AzureContext = (Connect-AzAccount -Identity).context
-
-# set and store context
-$AzureContext = Set-AzContext -SubscriptionName $AzureContext.Subscription -DefaultProfile $AzureContext
-
-$scriptBlock = @'
-    $rootPath = "$env:temp\ss"
-
-    # create temp directory
-    if(!(test-path -Path  $rootPath)){
-        Write-Host "New directory created $rootPath"
-        New-Item -Path $rootPath -ItemType Directory
-    }
-
-    # variables
-    $dbPath = "$rootPath\db.txt"
-    $domain = "ss.lv"
-    $htmlPath = "$rootPath\ss_caravan_$((get-date).tostring('dd_MM_yyyy')).html"
-    $htmlPathMoto = "$rootPath\ss_moto_$((get-date).tostring('dd_MM_yyyy')).html"
+param(
+    $rootPath = "$env:temp\ss",
+    $telegramtoken = $(Get-AutomationVariable -Name 'telegramtoken'),
+    $telegramchatid = $(Get-AutomationVariable -Name 'telegramchatid'),
+    $path = "$rootPath\report\ss_moto_$((get-date).tostring('dd_MM_yyyy')).html",
+    $pathCaravan = "$rootPath\ss_caravan_$((get-date).tostring('dd_MM_yyyy')).html",
+    $dbPath = "$rootPath\db.txt",
     $defaultHtmlPath = "$rootPath\default.html"
+)
 
-    # get automation account variables
-    $telegramtoken = telegramtokenToReplace
-    $telegramchatid = telegramchatidToReplace
-
-    # install choco
-    Write-Host "Installing choco:"
-    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-    # install dependecies
-    Write-Host "Installing choco install googlechrome --version=108.0.5359.99"
-    choco install googlechrome --version=108.0.5359.99 -y
-    Write-Host "Installing choco install chromedriver --version=108.0.5359.710"
-    choco install chromedriver --version=108.0.5359.710 -y
-    if (!(Get-Module -ListAvailable -Name Selenium)) {
-        Write-Host "Installing Install-Module Selenium -Force"
-        Install-Module Selenium -Force
-    }
-    else {
-        Write-Host "Selenium module already installed"
-    }
-'@
-
-$date = get-date -Format 'ddMMyyy_HHmmss'
-$scriptPath = "webScraperSs"+$Date+".ps1"
-#The cmdlet only accepts a file, so temporarily write the script to disk using runID as a unique name
-Out-File -FilePath $scriptPath -InputObject $scriptBlock
-#Replace private key
-(((Get-Content -Path $scriptPath) -replace "telegramtokenToReplace",$telegramtoken) -replace "telegramchatidToReplace",$telegramchatid) | Out-File -FilePath $scriptPath
-$scriptFile = get-item $scriptpath
-$fullPath = $scriptfile.fullname
-
-$jobIDs= New-Object System.Collections.Generic.List[System.Object]
-
-#Start Vm
-write-host "Start-AzVM -Name $vmName -ResourceGroupName $resourceGroup -NoWait"
-$startAzVM = Start-AzVM -Name $vmName -ResourceGroupName $resourceGroup -NoWait
-
-#Wait until Vm will be in running state
-do{
-    #Start-Sleep -Seconds 30
-    $vmStatus = Get-AzVm -Name $vmName -ResourceGroupName $resourceGroup -Status
-}while (!($vmStatus.Statuses.displayStatus[1] -eq 'VM running'))
-#Wait more
-#Start-Sleep -Seconds 180
-
-Write-Output "Invoke-AzVMRunCommand -ResourceGroupName $resourceGroup -Name $VmName -CommandId 'RunPowerShellScript' -ScriptPath $fullPath"
-$AzVMRunCommand = Invoke-AzVMRunCommand -ResourceGroupName $resourceGroup -Name $VmName -CommandId 'RunPowerShellScript' -ScriptPath $fullPath
-
-# message
-$AzVMRunCommand.Value | ConvertTo-Json -Depth 100
-
-# write error
-if ($AzVMRunCommand.Value.Message -match "ERROR:"){
-    Write-Error "$($AzVMRunCommand.Value.Message)"
-	throw "$($AzVMRunCommand.Value.Message)"
+# create temp directory
+if(!(test-path -Path  $rootPath)){
+    Write-Host "New directory created $rootPath"
+    New-Item -Path $rootPath -ItemType Directory
 }
 
-#Clean up our variables:
-Remove-Item -Path $fullPath
+if(!(test-path -Path "$rootPath\report")){
+    Write-Host "New directory created $rootPath\report"
+    New-Item -Path "$rootPath\report" -ItemType Directory
+}
+
+# functions
+Function Send-TelegramMessage {
+    Param([Parameter(Mandatory = $true)]
+    [String]$message,
+    [String]$telegramtoken,
+    [String]$telegramchatid
+    )
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $Response = Invoke-RestMethod -Uri "https://api.telegram.org/bot$($Telegramtoken)/sendMessage?chat_id=$($Telegramchatid)&text=$($Message)"
+}
+
+Function Send-TelegramFile {
+    Param([Parameter(Mandatory = $true)]
+    [String]$filePath,
+    [String]$telegramtoken,
+    [String]$telegramchatid
+    )
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $uri = "https://api.telegram.org/bot$($telegramtoken)/sendDocument"
+    $Form = @{
+        chat_id  = $telegramchatid
+        document = Get-item $filePath
+    }
+    
+    Invoke-RestMethod -Uri $uri -Form $Form -Method Post
+}
+
+if(!(Test-Path $dbPath)){
+    new-item -ItemType File -Path $dbPath
+}
+
+# models
+$models = 'tenere', 'transalp', 'nx', 'Xt660', 'africa','KLR','Z400','KLX','CRF450','XT250','CRF300','Beta 500','Beta 390'
+
+# get pages
+$pages = @()
+foreach ($model in $models) {
+    $uri = "https://www.ss.lv/lv/transport/moto-transport/motorcycles/search-result/?q=$model"
+    $WebRequest = Invoke-WebRequest -Method Get -Uri $uri -UseBasicParsing
+    $pages += $WebRequest.Content
+}
+
+# get adds
+$pattern = '<tr id="tr_\d\d\d\d\d\d\d\d[\s\S]*?€<\/td><\/tr>'
+$adds = ([regex]::Matches($pages, $pattern).Value) -replace '/msg/', 'https://www.ss.lv//msg/'
+$dbContent = get-content -Path $dbPath
+$newAdds = @()
+foreach ($add in $adds){
+    # get cost
+    $patternCost = '\d*,*\d*\s\s€'
+    $price = ([regex]::Matches($(($add -replace '</b>','') -replace '<b>',''), $patternCost).value -replace ',') -replace '  €'
+    if($price.count -gt 1){
+        $price = $price[-1]
+    }
+    # add adds info to db
+    $pattern = 'href=".+?html" id='
+    $id = (([regex]::Matches($add, $pattern).Value) -split '/')[-1] -replace '" id=',''
+    if($dbContent -notcontains $id){
+        $id | add-content -Path $dbPath
+        $table = '' | select price, html
+        $table.price = [int]$price
+        $table.html = $add
+        $newAdds += $table
+    }
+}
+
+
+# send if new exist exist
+if($newAdds){
+    # sort table 
+    $htmlAdds = ($newAdds | sort price | where html -NotLike "*dienā*").html
+
+    # create new file in temp directory
+    $html = (get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds | out-file $path
+
+    # send telgram message
+    Send-TelegramMessage -telegramtoken $telegramtoken -telegramchatid $telegramchatid -message 'Sending ss moto file:'
+    Send-TelegramFile -telegramtoken $telegramtoken -telegramchatid $telegramchatid -filePath $path
+}else{
+    write-host "Nothing to send"
+}
+
+# models
+$models = 'fiat', 'ford', 'renault', 'volkswagen', 'opel', 'mercedes-benz'
+
+# get pages
+$pages = @()
+foreach ($model in $models) {
+    $uri = "https://www.ss.lv/lv/transport/cargo-cars/campings/search-result/?q=$($model)"
+    $WebRequest = Invoke-WebRequest -Method Get -Uri $uri -UseBasicParsing
+    $pages += $WebRequest.Content
+}
+
+#vans
+$models = 'Renault master', 'Fiat ducato', 'Volkswagen crafter', 'Mercedes sprinter', 'Ford transit', 'Citroen jumper'
+
+foreach ($model in $models) {
+    $uri = "https://www.ss.lv/lv/transport/cars/search-result/?q=$($model)"
+    $WebRequest = Invoke-WebRequest -Method Get -Uri $uri -UseBasicParsing
+    $pages += $WebRequest.Content
+}
+
+# get adds
+$pattern = '<tr id="tr_\d\d\d\d\d\d\d\d[\s\S]*?€<\/td><\/tr>'
+$adds = ([regex]::Matches($pages, $pattern).Value) -replace '/msg/', 'https://www.ss.lv//msg/'
+$dbContent = get-content -Path $dbPath
+$newAdds = @()
+foreach ($add in $adds){
+    # get cost
+    $patternCost = '\d*,*\d*\s\s€'
+    $price = ([regex]::Matches($(($add -replace '</b>','') -replace '<b>',''), $patternCost).value -replace ',') -replace '  €'
+    if($price.count -gt 1){
+        $price = $price[-1]
+    }
+    # add adds info to db
+    $pattern = 'href=".+?html" id='
+    $id = (([regex]::Matches($add, $pattern).Value) -split '/')[-1] -replace '" id=',''
+    if($dbContent -notcontains $id){
+        $id | add-content -Path $dbPath
+        $table = '' | select price, html
+        $table.price = [int]$price
+        $table.html = $add
+        $newAdds += $table
+    }
+}
+
+
+# send if new exist exist
+if($newAdds){
+    # sort table 
+    $htmlAdds = ($newAdds | sort price | where html -NotLike "*dienā*").html
+    # create new file in temp directory
+
+    # create new file in temp directory
+    $html = (get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds | out-file $pathCaravan
+
+    # send telgram message
+    Send-TelegramMessage -telegramtoken $telegramtoken -telegramchatid $telegramchatid -message 'Sending ss caravan file:'
+    Send-TelegramFile -telegramtoken $telegramtoken -telegramchatid $telegramchatid -filePath $pathCaravan
+}else{
+    write-host "Nothing to send"
+}
