@@ -20,7 +20,7 @@ if(!(test-path -Path "$rootPath\report")){
     New-Item -Path "$rootPath\report" -ItemType Directory
 }
 
-$uri = 'https://raw.githubusercontent.com/bbz94/web_scraper_aa/main/webScraperAAScripts/defaultSs.html'
+$uri = 'https://raw.githubusercontent.com/bbz94/web_scraper_aa/main/webScraperAAScripts/defaultAutoplius.html'
 Invoke-WebRequest -Uri $uri -OutFile "$rootPath\default.html"
 
 # functions
