@@ -20,6 +20,9 @@ if(!(test-path -Path "$rootPath\report")){
     New-Item -Path "$rootPath\report" -ItemType Directory
 }
 
+$uri = 'https://raw.githubusercontent.com/bbz94/web_scraper_aa/main/webScraperAAScripts/defaultSs.html'
+Invoke-WebRequest -Uri $uri -OutFile "$rootPath\default.html"
+
 # functions
 Function Send-TelegramMessage {
     Param([Parameter(Mandatory = $true)]
