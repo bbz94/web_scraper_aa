@@ -19,3 +19,12 @@ do{
     Start-Sleep -Seconds 5
     $vmStatus = Get-AzVm -Name $vmName -ResourceGroupName $resourceGroup -Status
 }while (!($vmStatus.Statuses.displayStatus[1] -eq 'VM running'))
+
+# Trigger other runbooks
+Start-AutomationRunbook -Name "web-scraper-install-pre" -RunOn $vmName
+Start-AutomationRunbook -Name "web-scraper-ss" -RunOn $vmName
+Start-AutomationRunbook -Name "web-scraper-autoplius" -RunOn $vmName
+
+# Slleep for 10 min
+Start-Sleep -Seconds 600
+Start-AutomationRunbook -Name "web-scraper-stop-vm"
