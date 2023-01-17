@@ -8,8 +8,12 @@ Write-Host "Installing choco install googlechrome"
 choco install googlechrome  -y
 Write-Host "Installing choco install chromedriver"
 choco install chromedriver -y
-Write-Host "Installing choco install powershell-core"
-choco install powershell-core -y
+
+if(!(test-path -path 'C:\PowerShell7')){
+    Write-Host "Installing PowerShell-7.3.1-win-x64.zip"
+    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.3.1/PowerShell-7.3.1-win-x64.zip' -OutFile "$env:temp\PowerShell-7.3.1-win-x64.zip"
+    Expand-Archive -Path "$env:temp\PowerShell-7.3.1-win-x64.zip" -DestinationPath 'C:\PowerShell7'
+}
 
 if (!(Get-Module -ListAvailable -Name Selenium)) {
     Write-Host "Installing Install-Module Selenium -Force"
