@@ -15,10 +15,5 @@ if(!(test-path -path 'C:\PowerShell7')){
     Expand-Archive -Path "$env:temp\PowerShell-7.3.1-win-x64.zip" -DestinationPath 'C:\PowerShell7'
 }
 
-if (!(Get-Module -ListAvailable -Name Selenium)) {
-    Write-Host "Installing Install-Module Selenium -Force"
-    Install-Module Selenium -Force
-}
-else {
-    Write-Host "Selenium module already installed"
-}
+# install selenium
+pwsh.exe -c "if (!(Get-Module -ListAvailable -Name Selenium)) {pwsh.exe -c 'Install-Module Selenium -Force'}else {write-host 'Selenium module exists'}"
