@@ -159,7 +159,7 @@ if($newAdds){
     # sort table 
     $htmlAdds = ($newAdds | sort price).html
     # create new file in temp directory
-    $html = ((get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds) -replace 'src=""data-','' | out-file $htmlPath
+    $html = ((get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds) -replace '"" data-src=','' | out-file $htmlPath
 
     # send telgram message
     Send-TelegramMessage -telegramtoken $telegramtoken -telegramchatid $telegramchatid -message 'Sending autoplius caravan file:'
@@ -224,7 +224,7 @@ if($newAdds){
     # sort table 
     $htmlAdds = ($newAdds | sort price).html
     # create new file in temp directory
-    $html = ((get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds) -replace 'src=""data-','' | out-file $htmlPathMoto
+    $html = ((get-content -path $defaultHtmlPath) -replace 'addsToAddHere', $htmlAdds) -replace '"" data-src=','' | out-file $htmlPathMoto
 
     # send telgram message
     Send-TelegramMessage -telegramtoken $telegramtoken -telegramchatid $telegramchatid -message 'Sending autoplius moto file:'

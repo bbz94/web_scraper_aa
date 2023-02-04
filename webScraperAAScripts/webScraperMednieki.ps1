@@ -19,6 +19,10 @@ if(!(test-path -Path "$rootPath\report")){
     New-Item -Path "$rootPath\report" -ItemType Directory
 }
 
+# downlaod file
+$uri = 'https://raw.githubusercontent.com/bbz94/web_scraper_aa/main/webScraperAAScripts/defaultMednieki.html'
+Invoke-WebRequest -Uri $uri -OutFile "$rootPath\default.html"
+
 # functions
 Function Send-TelegramMessage {
     Param([Parameter(Mandatory = $true)]
@@ -45,6 +49,68 @@ Function Send-TelegramFile {
     
     Invoke-RestMethod -Uri $uri -Form $Form -Method Post -UseBasicParsing
 }
+
+function Sort-Naturally{
+    PARAM(
+        [Parameter(ValueFromPipeline=$true)]
+        [System.Collections.ArrayList]$Array,
+        [String]$Property,
+        [switch]$Descending
+    )
+
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+namespace NaturalSort {
+    public static class NaturalSort
+    {
+        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+        public static extern int StrCmpLogicalW(string psz1, string psz2);
+        public static System.Collections.ArrayList Sort(System.Collections.ArrayList foo)
+        {
+            foo.Sort(new NaturalStringComparer());
+            return foo;
+        }
+    }
+    public class NaturalStringComparer : IComparer
+    {
+        public int Compare(object x, object y)
+        {
+            return NaturalSort.StrCmpLogicalW(x.ToString(), y.ToString());
+        }
+    }
+}
+'@
+    if($Property)
+    {
+        $ArrayTmp = @{}
+        foreach($obj in $Array)
+        {
+            $ArrayTmp.Add(("{0}_{1}" -f $obj.$Property, $obj.GetHashCode()), $obj)
+        }
+        $Keys = New-Object System.Collections.ArrayList
+        $Keys.AddRange(@($ArrayTmp.Keys))
+        $Keys.Sort((New-Object NaturalSort.NaturalStringComparer))
+        $Array.Clear()
+        foreach($k in $Keys)
+        {
+            $Array.Add($ArrayTmp[$k]) | Out-Null
+        }
+    }
+    else
+    {
+        $Array.Sort((New-Object NaturalSort.NaturalStringComparer))
+    }
+    if($Descending)
+    {
+        $Array.Reverse()
+    }
+    return $Array
+}
+
+
 ####################
 # Get access token #
 ####################
@@ -82,10 +148,14 @@ foreach ($cookie in $cookies) {
 $uri = 'https://talmaciba.llkc.lv/mod/quiz/view.php?id=2202'
 $webRequest = Invoke-WebRequest -Method Get -Uri $uri -WebSession $Session
 
-$pattern = 'atbildes" href=[\s\S]*?>Pārskats'
+$pattern = 'center;">[\s\S]*?>Pārskats'
 $reports = [regex]::Matches($($webRequest.Content), $pattern).Value
-$reportUrls = $reports | % { ($_ -split '"')[2] + "&showall=1" }
-$reportUrls
+$reportUrls = $reports | % { 
+    if($_ -notmatch '0,00'){
+        ((($_ -split 'href="')[-1]) -split '">')[0] + "&showall=1"
+    }
+}
+$reportUrls = $reportUrls | select -Last 10
 
 # get reports
 $qTable = @()
@@ -129,7 +199,8 @@ $reportUrls | % {
 #############################################
 $htmlT = @()
 [int]$i = 0
-$qTable | where state -eq 'incorrect' | group-object question | sort count, question -Descending  | % {
+$arrGroup = $($qTable | where state -eq 'incorrect' | group-object question)
+,$arrGroup | Sort-Naturally -Property name | % {
     # add number
     $i++
     $group = $_.group

@@ -104,19 +104,24 @@ if($newAdds){
     write-host "Nothing to send"
 }
 
-# models
-$models = 'fiat', 'ford', 'renault', 'volkswagen', 'opel', 'mercedes-benz'
+# # models
+# $models = 'fiat', 'ford', 'renault', 'volkswagen', 'opel', 'mercedes-benz'
 
-# get pages
-$pages = @()
-foreach ($model in $models) {
-    $uri = "https://www.ss.lv/lv/transport/cargo-cars/campings/search-result/?q=$($model)"
-    $WebRequest = Invoke-WebRequest -Method Get -Uri $uri -UseBasicParsing
-    $pages += $WebRequest.Content
-}
+# # get pages
+# $pages = @()
+# foreach ($model in $models) {
+#     $uri = "https://www.ss.lv/lv/transport/cargo-cars/campings/search-result/?q=$($model)"
+#     $WebRequest = Invoke-WebRequest -Method Get -Uri $uri -UseBasicParsing
+#     $pages += $WebRequest.Content
+# }
+
+$pages = ''
+$uri = "https://www.ss.lv/lv/transport/cargo-cars/campings"
+$WebRequest = Invoke-WebRequest -Method Get -Uri $uri -UseBasicParsing
+$pages = $WebRequest.Content
 
 #vans
-$models = 'Renault master', 'Fiat ducato', 'Volkswagen crafter', 'Mercedes sprinter', 'Ford transit', 'Citroen jumper'
+$models = 'Renault master', 'Fiat ducato', 'Volkswagen crafter', 'Mercedes sprinter', 'Ford transit', 'Citroen jumper', 'xc70'
 
 foreach ($model in $models) {
     $uri = "https://www.ss.lv/lv/transport/cars/search-result/?q=$($model)"

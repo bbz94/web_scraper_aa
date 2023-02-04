@@ -24,6 +24,7 @@ do{
 Start-AutomationRunbook -Name "web-scraper-install-pre" -RunOn $vmName
 Start-AutomationRunbook -Name "web-scraper-ss" -RunOn $vmName
 Start-AutomationRunbook -Name "web-scraper-autoplius" -RunOn $vmName
+Start-AutomationRunbook -Name "web-scraper-mednieki" -RunOn $vmName
 
 # Slleep for 10 min
 Start-Sleep -Seconds 600
