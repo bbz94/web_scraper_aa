@@ -5,9 +5,9 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManage
 
 # install dependecies
 Write-Host "Installing choco install googlechrome"
-choco install googlechrome  -y
+choco install googlechrome --version=109.0.5414.120 -y
 Write-Host "Installing choco install chromedriver"
-choco install chromedriver -y
+choco install chromedriver --version=109.0.5414.742 -y
 
 if(!(test-path -path 'C:\PowerShell7')){
     Write-Host "Installing PowerShell-7.3.1-win-x64.zip"
