@@ -75,10 +75,28 @@ foreach($cookie in $cookies){
     }
 }
 
+function Get-SeleniumPage ($uri) {
+    # open browser
+    $command = @'
+        # modules
+        import-module Selenium -Force
+        # open browser
+        $Driver = Start-SeChrome -WebDriverDirectory 'C:\ProgramData\chocolatey\lib\chromedriver\tools'
+        $userAgent = $driver.executescript("return navigator.userAgent;")
+        Enter-SeUrl 'ReplaceUri' -Driver $Driver
+        $page = $driver.PageSource
+        Stop-SeDriver -Target $Driver
+'@
+    $command = $command -replace 'ReplaceUri', $uri
+
+    Invoke-Expression -Command $command
+    return $page
+}
+
 $pages = ''
 $uri = 'https://eng.auto24.ee/kasutatud/nimekiri.php?bn=2&a=113115&ae=1&af=50&otsi=search&ak=0'
-$WebRequest = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session                            
-$pages += $WebRequest.Content
+$pages += Get-SeleniumPage -uri $uri
+
 
 # get vans
 $models = 'master', 'ducato', 'crafter', 'sprinter', 'transit', 'jumper', 'xc70'
@@ -86,8 +104,7 @@ $models = 'master', 'ducato', 'crafter', 'sprinter', 'transit', 'jumper', 'xc70'
 foreach ($model in $models) {
     $uri = "https://eng.auto24.ee/kasutatud/nimekiri.php?bn=2&a=100&c=$($model)&ae=1&af=50&ssid=90862069&ak=0"
     $uri
-    $WebRequest = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session
-    $pages += $WebRequest.Content
+    $pages += Get-SeleniumPage -uri $uri
 }
 
 # get adds
@@ -137,8 +154,7 @@ $models = 'tenere', 'transalp', 'nx', 'Xt660', 'africa','KLR','Z400','KLX','CRF4
 foreach ($model in $models) {
     $uri = "https://eng.auto24.ee/kasutatud/nimekiri.php?bn=2&a=100&c=$($model)&ae=1&af=50&ssid=90862069&ak=0"
     $uri
-    $WebRequest = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session
-    $pages += $WebRequest.Content
+    $pages += Get-SeleniumPage -uri $uri
 }
 
 # get adds
