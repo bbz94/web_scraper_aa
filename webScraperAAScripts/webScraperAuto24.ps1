@@ -112,14 +112,14 @@ $pattern = '<div class="result-row item[\s\S]*?class="row-link" target="_self"><
 $adds = [regex]::Matches($pages, $pattern).Value
 $dbContent = get-content -Path $dbPath
 $newAdds = @()
-foreach ($add in $adds){
+foreach ($add in $adds[0]){
     # get cost
-    $patternCost = 'price">&euro;\d*,*\d*'
+    $patternCost = 'price">€\d*,*\d*'
     $priceArr = [regex]::Matches($add, $patternCost).value
     if($priceArr.count -gt 1){
-        $price = ($priceArr[-1] -replace 'price">&euro;') -replace ','
+        $price = ($priceArr[-1] -replace 'price">€') -replace ','
     }else{
-        $price = ($priceArr -replace 'price">&euro;') -replace ','
+        $price = ($priceArr -replace 'price">€') -replace ','
     }
     # add adds info to db
     $pattern = '\/vehicles\/\d*'
@@ -164,12 +164,12 @@ $dbContent = get-content -Path $dbPath
 $newAdds = @()
 foreach ($add in $adds){
     # get cost
-    $patternCost = 'price">&euro;\d*,*\d*'
+    $patternCost = 'price">€\d*,*\d*'
     $priceArr = [regex]::Matches($add, $patternCost).value
     if($priceArr.count -gt 1){
-        $price = ($priceArr[-1] -replace 'price">&euro;') -replace ','
+        $price = ($priceArr[-1] -replace 'price">€') -replace ','
     }else{
-        $price = ($priceArr -replace 'price">&euro;') -replace ','
+        $price = ($priceArr -replace 'price">€') -replace ','
     }
     # add adds info to db
     $pattern = '\/vehicles\/\d*'
