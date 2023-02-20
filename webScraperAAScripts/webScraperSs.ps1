@@ -3,7 +3,7 @@ param(
     $telegramtoken = $(Get-AutomationVariable -Name 'telegramtoken'),
     $telegramchatid = $(Get-AutomationVariable -Name 'telegramchatid'),
     $path = "$rootPath\report\ss_moto_$((get-date).tostring('dd_MM_yyyy')).html",
-    $pathCaravan = "$rootPath\ss_caravan_$((get-date).tostring('dd_MM_yyyy')).html",
+    $pathCaravan = "$rootPath\report\ss_caravan_$((get-date).tostring('dd_MM_yyyy')).html",
     $dbPath = "$rootPath\db.txt",
     $defaultHtmlPath = "$rootPath\default.html"
 )
