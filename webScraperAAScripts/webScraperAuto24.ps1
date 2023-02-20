@@ -1,8 +1,8 @@
 param(
     $rootPath = "$env:temp\auto24",
+    $dbPath = "$rootPath\db.txt",
     $telegramtoken = $(Get-AutomationVariable -Name 'telegramtoken'),
     $telegramchatid = $(Get-AutomationVariable -Name 'telegramchatid'),
-    $dbPath = "$rootPath\db.txt",
     $domain = "eng.auto24.ee",
     $htmlPath = "$rootPath\report\auto24_caravan_$((get-date).tostring('dd_MM_yyyy')).html",
     $htmlPathMoto = "$rootPath\report\auto24_moto_$((get-date).tostring('dd_MM_yyyy')).html",
@@ -112,7 +112,7 @@ $pattern = '<div class="result-row item[\s\S]*?class="row-link" target="_self"><
 $adds = [regex]::Matches($pages, $pattern).Value
 $dbContent = get-content -Path $dbPath
 $newAdds = @()
-foreach ($add in $adds[0]){
+foreach ($add in $adds){
     # get cost
     $patternCost = 'price">€\d*,*\d*'
     $priceArr = [regex]::Matches($add, $patternCost).value
@@ -128,7 +128,7 @@ foreach ($add in $adds[0]){
         $id | add-content -Path $dbPath
         $table = '' | select price, html
         $table.price = [int]$price
-        $table.html = $add
+        $table.html = $add -replace $id,$('https://'+$domain+$id)
         $newAdds += $table
     }
 }
@@ -178,7 +178,7 @@ foreach ($add in $adds){
         $id | add-content -Path $dbPath
         $table = '' | select price, html
         $table.price = [int]$price
-        $table.html = $add
+        $table.html = $add -replace $id,$('https://'+$domain+$id)
         $newAdds += $table
     }
 }
